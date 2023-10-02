@@ -3,7 +3,7 @@ import * as ReactDOM from 'react-dom';
 //import styles from './FsposKwitter.module.scss';
 import { IKwitterDialogProps } from './IDialogProps';
 import { IKwitterDialogState } from './IDialogState';
-import { IItemAddResult } from '@pnp/sp/items';
+// import { IItemAddResult } from '@pnp/sp/items';
 import { BaseDialog, IDialogConfiguration } from '@microsoft/sp-dialog';
 import {
     TextField,
@@ -101,18 +101,19 @@ export default class KwitterDialog extends BaseDialog {
     private _saveToList = async (header: string, content: string): Promise<void> => {
         try{
             const spCache = spfi(this._sp).using(Caching({store:"session"}));
-              const iar:IItemAddResult = await spCache.web.lists.getById('61ed2056-88b9-47e1-b25b-170a2fd278b8').items.add({
+              const iar = await spCache.web.lists.getByTitle('Taylor Kwitter 14').items.add({
                   Title: "Loomis",
-                  hashtag: header || "Unknown",
-                  content: content || "Unknown",
+                  Text: content || "Unknown",
                   atTag: "Loomis",
-                  likes: 0,
+                  Likes: 0,
                 })
                 console.log(iar);
             } 	
             catch(err){
             Logger.write(`${this.LOG_SOURCE} (_saveToList) - ${JSON.stringify(err)} - `, LogLevel.Error);
-        }        
+        }
+        // we should just update global state here and have the list reference that ... it doesn't seem like there is a ref to global state anywhere...
+        // begs the question, where is the global state for this page?        
         await this.onSave(header, content);
         await this.close();
     }

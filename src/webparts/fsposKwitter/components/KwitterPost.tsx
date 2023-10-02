@@ -1,110 +1,80 @@
-import * as React from "react";
-import { IKwitterItem, IResponseItem  } from './Interfaces';
-import { Logger, LogLevel } from "@pnp/logging";
-import { Caching } from "@pnp/queryable";
-import { SPFI, spfi } from "@pnp/sp";
+import React from "react";
 import { getSP } from '../pnpjsConfig';
-
 import { Icon } from '@fluentui/react/lib/Icon';
-import dayjs from 'dayjs';
-
-//const IconTest = () => <Icon iconName="Like" />;
-  
+import dayjs from 'dayjs';  
 import styles from './FsposKwitter.module.scss';
 
-export interface IKwitterPostState {
-    items: IKwitterItem[];
-    filterItems: IKwitterItem[];
+interface IKwitterPostProps {
+  showAll: boolean;
+  items: any[];
+  handleItemUpdate: (updatedItem: any) => void;
+  currentUser: any;
 }
 
-export interface IKwitterPost {
-    showAll: boolean;
-}
+const KwitterPost: React.FC<IKwitterPostProps> = ({ showAll, items, handleItemUpdate, currentUser }) => {
+  const currentUserId = currentUser.loginName;
+  const _sp = React.useRef(getSP());
 
+  const updateLikedBy = async (item: any, updatedLikes: number, updatedLikedByArray: string[]) => {
+    await _sp.current.web.lists.getByTitle('Taylor Kwitter 14').items.getById(item.Id).update({
+      Likes: updatedLikes,
+      Likedby: JSON.stringify(updatedLikedByArray)
+    });
+  };
 
-export default class KwitterPost extends React.Component<IKwitterPost, IKwitterPostState> {
-   
-    private LOG_SOURCE = "🅿PnPjsExample";
-    private _sp: SPFI;  
+  const onLike = async (item: any) => {
+    const likedByArray = item.Likedby ? JSON.parse(item.Likedby) : [];
 
-    constructor(props:IKwitterPost){
-        super(props);
-    
-        //Set initial state
-        this.state = {
-          items: [],
-          filterItems: []
-        }
-        this._sp = getSP();
-      }
-    
-    public render(): React.ReactElement<IKwitterPost> {
-        
-    this._readAllKwitterItems();
-    return (
-            <div>
-                <section>
-                    {this.state.items.map((item) => {
-                        const shortDateFormat = dayjs(item.Created).format("YYYY-MM-DD HH:mm")
-                        return( <div className={styles["tweet-wrap"]}>
-                                    <div className={styles["tweet-header"]}>
-                                    <img src={item.logo} alt="" className={styles.avator} />
-                                    <div className="tweet-header-info">
-                                            {item.Title} <span>@{item.atTag}</span> <span>. {shortDateFormat} </span>
-                                            <p>{item.content}</p>                        
-                                    </div>
-                                    </div>
-                                        <div className={styles["tweet-info-counts"]}>                 
-                                            <Icon iconName="Like"/>
-                                            <div className={styles.likes}>{item.likes}</div>
-                                            <Icon iconName="hashtag" />
-                                        </div>                                     
-                                </div>
-                            )    
-                        })
-                    }
-                </section>    
-            </div>
-            );
-        }
+    let updatedLikes = item.Likes;
+    let updatedLikedByArray = [...likedByArray]; // clone the array
 
-  private _readAllKwitterItems = async(): Promise<void> => {
-    try{
-      const spCache = spfi(this._sp).using(Caching({store:"session"}));
-
-      const response: IKwitterItem[] = await spCache.web.lists
-        .getById('61ed2056-88b9-47e1-b25b-170a2fd278b8')
-        .items
-        .select("Id", "Title", "content", "logo", "Created","likes","atTag")
-        .orderBy("Created", false)();
-
-      // use map to convert IResponseItem[] into our internal object IFile[]
-      const items: IKwitterItem[] = response.map((item: IResponseItem) => {
-        return {
-          Id: item.Id,
-          Title: item.Title,
-          content: item.content,
-          logo: item.logo,
-          Created: item.Created,
-          likes: item.likes,
-          atTag: item.atTag
-        };
-      });
-
-      
-      //const filterItems = items.filter(item => item.atTag.match("Loomis"));
-      //console.log("Show all " + filterItems)
-      if(this.props.showAll){
-        this.setState({items});
-      }
-      else{
-        //Show all items
-        this.setState({ items });
-      }
-    } 
-      catch(err){
-      Logger.write(`${this.LOG_SOURCE} (_readAllKwitterItems) - ${JSON.stringify(err)} - `, LogLevel.Error);
+    if (likedByArray.includes(currentUserId)) {
+      // If the user has already liked the post
+      updatedLikes -= 1;
+      updatedLikedByArray = updatedLikedByArray.filter(id => id !== currentUserId);
+    } else {
+      // If the user hasn't liked the post yet
+      updatedLikes += 1;
+      updatedLikedByArray.push(currentUserId);
     }
-  }
 
+    try {
+      // Update the backend
+      await updateLikedBy(item, updatedLikes, updatedLikedByArray);
+
+      // Update the frontend
+      const updatedItem = { ...item, Likedby: JSON.stringify(updatedLikedByArray), Likes: updatedLikes };
+      handleItemUpdate(updatedItem);
+    } catch (error) {
+    }
+  };
+
+  return (
+    <div>
+      <section>
+        {items.map((item: any) => {
+          const shortDateFormat = dayjs(item.Created).format("YYYY-MM-DD HH:mm");
+          return (
+            <div className={styles["tweet-wrap"]} key={item.Id}>
+              <div className={styles["tweet-header"]}>
+                <img src={item.logo} alt="" className={styles.avator} />
+                <div className="tweet-header-info">
+                  {item.Title} <span>@{item.atTag}</span> <span>. {shortDateFormat} </span>
+                  <p>{item.Text}</p>
+                </div>
+              </div>
+              <div className={styles["tweet-info-counts"]}>
+                <Icon iconName="Like" onClick={() => onLike(item)} />
+                <div className={styles.likes}>{item.Likes}</div>
+                <Icon iconName="hashtag" />
+                <div>This was liked by {item.Likedby}</div>
+              </div>
+            </div>
+          );
+        })}
+      </section>
+    </div>
+  );
 }
+
+export default KwitterPost;

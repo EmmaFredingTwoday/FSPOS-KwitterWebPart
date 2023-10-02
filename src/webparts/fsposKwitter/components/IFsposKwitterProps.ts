@@ -5,4 +5,5 @@ export interface IFsposKwitterProps {
   hasTeamsContext: boolean;
   userDisplayName: string;
   showAll: boolean;
+  currentUser: any;
 }

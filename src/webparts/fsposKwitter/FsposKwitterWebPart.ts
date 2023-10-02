@@ -40,6 +40,7 @@ export const getSp = (context?: WebPartContext): SPFI => {
 export interface IFsposKwitterWebPartProps {
   description: string;
   showAll: boolean;
+  user: any;
 }
 
 export default class FsposKwitterWebPart extends BaseClientSideWebPart<IFsposKwitterWebPartProps> {
@@ -48,9 +49,11 @@ export default class FsposKwitterWebPart extends BaseClientSideWebPart<IFsposKwi
   private _environmentMessage: string = '';
 
   public render(): void {
+    const user = this.context.pageContext.user;
     const element: React.ReactElement<IFsposKwitterProps> = React.createElement(
       FsposKwitter,
       {
+        currentUser: user,
         description: this.properties.description,
         isDarkTheme: this._isDarkTheme,
         environmentMessage: this._environmentMessage,
