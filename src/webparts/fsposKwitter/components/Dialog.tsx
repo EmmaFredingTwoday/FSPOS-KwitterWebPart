@@ -1,125 +1,77 @@
-import * as React from 'react';
-import * as ReactDOM from 'react-dom';
-//import styles from './FsposKwitter.module.scss';
+import React, { useState } from 'react';
 import { IKwitterDialogProps } from './IDialogProps';
-import { IKwitterDialogState } from './IDialogState';
-// import { IItemAddResult } from '@pnp/sp/items';
-import { BaseDialog, IDialogConfiguration } from '@microsoft/sp-dialog';
 import {
-    TextField,
-    DefaultButton,
-    PrimaryButton,
-    DialogFooter,
-    DialogContent
+    TextField, 
+    DefaultButton, PrimaryButton,
+    DialogFooter, DialogContent
 } from '@fluentui/react/lib';
-import { SPFI, spfi } from "@pnp/sp";
 import { getSP } from '../pnpjsConfig';
 import { Logger, LogLevel } from "@pnp/logging";
-import { Caching } from "@pnp/queryable";
 
-class KwitterDialogContent extends React.Component<IKwitterDialogProps, IKwitterDialogState> {
+const KwitterDialogContent: React.FC<IKwitterDialogProps> = (props) => {
+    const [header] = useState('');
+    const [content, setContent] = useState('');
+    const [hashtagString, setHashtagString] = useState('');
 
-    constructor(props: IKwitterDialogProps) {
-        super(props);
+    return (
+        <div>
+            <DialogContent title="Skriv nytt inlägg" onDismiss={props.onClose}>
+                <div>
+                    <TextField
+                        label="Innehåll"
+                        rows={10}
+                        multiline
+                        onChange={(e, newValue) => setContent(newValue || '')}
+                        value={content}
+                    />
+                    <TextField
+                        label="Hashtags (comma separated)"
+                        onChange={(e, newValue) => setHashtagString(newValue || '')}
+                        value={hashtagString}
+                        placeholder="e.g. #fun, #sunnyday"
+                    />
+                </div>
+                <DialogFooter>
+                    <DefaultButton text="Cancel" title="Cancel" onClick={props.onClose} />
+                    <PrimaryButton
+                        text="Skapa inlägg"
+                        title="Skapa inlägg"
+                        onClick={async () => {
+                            await props.onSave(header, content, hashtagString);
+                        }}
+                    />
+                </DialogFooter>
+            </DialogContent>
+        </div>
+    );
+}
 
-        this.state = {
-            header: '',
-            content:'',
-            author:''
-        };        
+const KwitterDialog = ({ onSave, onClose }: IKwitterDialogProps) => {
+    const _sp = getSP();
+    const LOG_SOURCE = "🅿PnPjsExample";
+
+    const _saveToList = async (header: string, content: string, hashtagString: string) => {
+        try {
+            const hashtagsArray = hashtagString.split(',').map(tag => tag.trim().replace(/^#/, ''));
+            
+            await _sp.web.lists.getByTitle('Taylor Kwitter 14').items.add({
+                Title: "Loomis",
+                Text: content || "Unknown",
+                Likes: 0,
+                hashtag: JSON.stringify(hashtagsArray),
+            });
+        } catch (err) {
+            Logger.write(`${LOG_SOURCE} (_saveToList) - ${JSON.stringify(err)} - `, LogLevel.Error);
+        }
+        await onSave(header, content, hashtagString);
     }
     
-    public render(): JSX.Element {
-        return (<div>
-            <DialogContent
-                title="Skriv nytt inlägg"
-                onDismiss={this.props.onClose}
-                >
-            <div>
-                <div>
-                    <TextField label="#"
-                        onChange={this._onheaderChange}
-                        value={this.state.header} />
-                    <TextField label="Innehåll"
-                        rows={10}
-                        multiline={true}
-                        onChange={this._onContentChange}
-                        value={this.state.content} />                    
-                </div>
-            </div>
-
-            <DialogFooter>
-                <DefaultButton text="Cancel"
-                        title="Cancel" onClick={this.props.onClose} />
-                <PrimaryButton text="Skapa inlägg"
-                        title="Skapa inlägg" onClick={async () => { await this.props.onSave(this.state.header!, this.state.content!); }} />
-            </DialogFooter>
-        </DialogContent>
-    </div>);
-    }
-
-    private _onheaderChange = (event: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>, newValue?: string): void => {
-        this.setState({ header: newValue });
-    }
-
-    private _onContentChange = (event: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>, newValue?: string): void => {
-        this.setState({ content: newValue });
-    }
+    return (
+        <KwitterDialogContent
+            onSave={_saveToList}
+            onClose={onClose}
+        />
+    ); 
 }
 
-export default class KwitterDialog extends BaseDialog {
-    private _sp: SPFI; 
-    private LOG_SOURCE = "🅿PnPjsExample";
-    /**
-     * Constructor for the dialog window
-     */
-    constructor(
-        public onSave: (header: string, content: string) => Promise<void>,
-        public onClose: () => Promise<void>) {
-        super({isBlocking: true});        
-        this._sp = getSP();
-    }
-  
-    public render(): void {
-        ReactDOM.render(<KwitterDialogContent
-                onSave={this._saveToList}
-                onClose={this._close}
-            />,
-            this.domElement);
-    }
-  
-    public getConfig(): IDialogConfiguration {
-      return {
-        isBlocking: true
-      };
-    }
-
-    protected onAfterClose(): void {
-        ReactDOM.unmountComponentAtNode(this.domElement);
-    }
-
-    private _saveToList = async (header: string, content: string): Promise<void> => {
-        try{
-            const spCache = spfi(this._sp).using(Caching({store:"session"}));
-              const iar = await spCache.web.lists.getByTitle('Taylor Kwitter 14').items.add({
-                  Title: "Loomis",
-                  Text: content || "Unknown",
-                  atTag: "Loomis",
-                  Likes: 0,
-                })
-                console.log(iar);
-            } 	
-            catch(err){
-            Logger.write(`${this.LOG_SOURCE} (_saveToList) - ${JSON.stringify(err)} - `, LogLevel.Error);
-        }
-        // we should just update global state here and have the list reference that ... it doesn't seem like there is a ref to global state anywhere...
-        // begs the question, where is the global state for this page?        
-        await this.onSave(header, content);
-        await this.close();
-    }
-  
-    private _close = async (): Promise<void> => {
-        await this.close();
-        await this.onClose();
-    }
-}
+export default KwitterDialog;

@@ -1,10 +1,6 @@
-import * as React from 'react';
+import React, { useState } from 'react';
 import { PrimaryButton } from '@fluentui/react/lib';
-import  TaskDialog from './Dialog'
-export interface IKwitterDialogState {
-  items: [];
-  errors: string[];
-}
+import KwitterDialog from './Dialog';
 
 export interface IKwitterDialogProps {
   updatePosts: () => void;
@@ -14,38 +10,27 @@ export interface IKwitterDialogProps {
   errors?: string[];
 }
 
+const ShowDialog: React.FC<IKwitterDialogProps> = ({ updatePosts, onClose, onSave }) => {
+  const [showDialog, setShowDialog] = useState(false);
 
+  const handleDialogClose = async () => {
+    onClose();
+    setShowDialog(false);
+};
 
-export default class ShowDialog extends React.Component<IKwitterDialogProps> {
-  constructor(props: IKwitterDialogProps) {
-    super(props);
-    this.state = {
-      items: [],
-      errors: [],
-    };
-  }
+  const handleDialogSave = async (header: string, content: string) => {
+    await updatePosts();
+    setShowDialog(false);
+  };
 
-  public render(): React.ReactElement<IKwitterDialogProps> {  
-    return (
-      <section>
-          <div style={{textAlign: 'center', marginTop: '10px', marginBottom: '30px'}}>
-            <PrimaryButton text='Skriv inlägg' onClick={this._createTask} />
-          </div>   
-      </section>
-    );
-  }
-
-  private _createTask = async (): Promise<void> => {
-    const taskDialog = new TaskDialog(      
-        async (header, content) => {
-            this.props.updatePosts();
-        },
-        async () => alert('You closed the dialog!')
-    );
-    try {
-      await taskDialog.show();
-    } catch (error) {
-        console.error("Error showing the dialog:", error);
-    }
+  return (
+    <section>
+      <div style={{ textAlign: 'center', marginTop: '10px', marginBottom: '30px' }}>
+        <PrimaryButton text='Skriv inlägg' style={{ backgroundColor: '#00453C' }} onClick={() => setShowDialog(true)} />
+      </div>
+      {showDialog && <KwitterDialog onSave={handleDialogSave} onClose={handleDialogClose} />}
+    </section>
+  );
 }
-}
+
+export default ShowDialog;

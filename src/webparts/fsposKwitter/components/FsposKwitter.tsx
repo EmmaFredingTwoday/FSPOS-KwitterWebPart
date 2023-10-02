@@ -18,10 +18,10 @@ const FsposKwitter: React.FC<IFsposKwitterProps> = ({ currentUser, ...props }) =
 
   const _readAllKwitterItems = async () => {
     try {
-      console.log("READ KWITTER")
       const response: IKwitterItem[] = await _sp.current.web.lists
         .getByTitle('Taylor Kwitter 14')
-        .items(); 
+        .items
+        .orderBy("Created", false)(); 
       setItems(response);
     } catch (err) {
       Logger.write(`(_readAllKwitterItems) - ${JSON.stringify(err)} - `, LogLevel.Error);
