@@ -1,5 +1,5 @@
 export interface IFsposKwitterProps {
-  description: string;
+  listName: string;
   isDarkTheme: boolean;
   environmentMessage: string;
   hasTeamsContext: boolean;

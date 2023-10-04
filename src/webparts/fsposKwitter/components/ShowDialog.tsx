@@ -8,9 +8,11 @@ export interface IKwitterDialogProps {
   onSave: () => void;
   items?: any[];
   errors?: string[];
+  list: string;
+  currentUser: string;
 }
 
-const ShowDialog: React.FC<IKwitterDialogProps> = ({ updatePosts, onClose, onSave }) => {
+const ShowDialog: React.FC<IKwitterDialogProps> = ({ updatePosts, onClose, onSave, ...props }) => {
   const [showDialog, setShowDialog] = useState(false);
 
   const handleDialogClose = async () => {
@@ -22,13 +24,12 @@ const ShowDialog: React.FC<IKwitterDialogProps> = ({ updatePosts, onClose, onSav
     await updatePosts();
     setShowDialog(false);
   };
-
   return (
     <section>
       <div style={{ textAlign: 'center', marginTop: '10px', marginBottom: '30px' }}>
         <PrimaryButton text='Skriv inlägg' style={{ backgroundColor: '#00453C' }} onClick={() => setShowDialog(true)} />
       </div>
-      {showDialog && <KwitterDialog onSave={handleDialogSave} onClose={handleDialogClose} />}
+      {showDialog && <KwitterDialog onSave={handleDialogSave} onClose={handleDialogClose} list={props.list} currentUser={props.currentUser} />}
     </section>
   );
 }

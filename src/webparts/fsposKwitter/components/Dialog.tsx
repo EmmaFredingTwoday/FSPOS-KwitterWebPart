@@ -12,6 +12,18 @@ const KwitterDialogContent: React.FC<IKwitterDialogProps> = (props) => {
     const [header] = useState('');
     const [content, setContent] = useState('');
     const [hashtagString, setHashtagString] = useState('');
+    const [hashtagError, setHashtagError] = useState<string | undefined>();
+
+    const validateHashtags = (value: string) => {
+        // Regular expression to match strings that do not contain spaces
+        // and are comma-separated. This will also exclude trailing commas.
+        const regex = /^#?[^\s,]+(,#?[^\s,]+)*$/;
+        if (value && !regex.test(value)) {
+            setHashtagError("Hashtags should not have spaces and must be comma-separated without trailing commas.");
+        } else {
+            setHashtagError(undefined);
+        }
+    };
 
     return (
         <div>
@@ -26,8 +38,13 @@ const KwitterDialogContent: React.FC<IKwitterDialogProps> = (props) => {
                     />
                     <TextField
                         label="Hashtags (comma separated)"
-                        onChange={(e, newValue) => setHashtagString(newValue || '')}
+                        onChange={(e, newValue) => {
+                            setHashtagString(newValue || '');
+                            validateHashtags(newValue || '');
+                        }}
+                        onBlur={(e) => validateHashtags((e.target as HTMLInputElement).value)}
                         value={hashtagString}
+                        errorMessage={hashtagError}
                         placeholder="e.g. #fun, #sunnyday"
                     />
                 </div>
@@ -36,8 +53,9 @@ const KwitterDialogContent: React.FC<IKwitterDialogProps> = (props) => {
                     <PrimaryButton
                         text="Skapa inlägg"
                         title="Skapa inlägg"
+                        style={{ backgroundColor: '#00453C' }}
                         onClick={async () => {
-                            await props.onSave(header, content, hashtagString);
+                            await props.onSave(header, content, hashtagString, props.list, props.currentUser);
                         }}
                     />
                 </DialogFooter>
@@ -46,30 +64,33 @@ const KwitterDialogContent: React.FC<IKwitterDialogProps> = (props) => {
     );
 }
 
-const KwitterDialog = ({ onSave, onClose }: IKwitterDialogProps) => {
+const KwitterDialog = ({ onSave, onClose, ...props }: IKwitterDialogProps) => {
     const _sp = getSP();
     const LOG_SOURCE = "🅿PnPjsExample";
 
-    const _saveToList = async (header: string, content: string, hashtagString: string) => {
+    const _saveToList = async (header: string, content: string, hashtagString: string, list: string, currentUser: any) => {
         try {
             const hashtagsArray = hashtagString.split(',').map(tag => tag.trim().replace(/^#/, ''));
-            
-            await _sp.web.lists.getByTitle('Taylor Kwitter 14').items.add({
-                Title: "Loomis",
+            console.log("Attempting to save", currentUser, content)
+            await _sp.web.lists.getByTitle(list).items.add({
+                Title: currentUser.displayName,
                 Text: content || "Unknown",
                 Likes: 0,
                 hashtag: JSON.stringify(hashtagsArray),
+                profileimage: currentUser.displayName
             });
         } catch (err) {
             Logger.write(`${LOG_SOURCE} (_saveToList) - ${JSON.stringify(err)} - `, LogLevel.Error);
         }
-        await onSave(header, content, hashtagString);
+        await onSave(header, content, hashtagString, list, currentUser);
     }
     
     return (
         <KwitterDialogContent
             onSave={_saveToList}
             onClose={onClose}
+            list={props.list}
+            currentUser={props.currentUser}
         />
     ); 
 }

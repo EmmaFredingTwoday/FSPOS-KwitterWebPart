@@ -3,10 +3,11 @@ import * as ReactDom from 'react-dom';
 import { Version } from '@microsoft/sp-core-library';
 import {
   type IPropertyPaneConfiguration,
-  PropertyPaneTextField
+  PropertyPaneTextField,
+  PropertyPaneToggle
 } from '@microsoft/sp-property-pane';
 
-import * as strings from 'FsposKwitterWebPartStrings';
+import * as config from 'FsposKwitterWebPartStrings';
 import FsposKwitter from './components/FsposKwitter';
 import { IFsposKwitterProps } from './components/IFsposKwitterProps';
 import { initializeIcons } from '@fluentui/font-icons-mdl2';
@@ -38,7 +39,7 @@ export const getSp = (context?: WebPartContext): SPFI => {
 };
 
 export interface IFsposKwitterWebPartProps {
-  description: string;
+  listName: string;
   showAll: boolean;
   user: any;
 }
@@ -54,12 +55,12 @@ export default class FsposKwitterWebPart extends BaseClientSideWebPart<IFsposKwi
       FsposKwitter,
       {
         currentUser: user,
-        description: this.properties.description,
+        listName: this.properties.listName,
         isDarkTheme: this._isDarkTheme,
         environmentMessage: this._environmentMessage,
         hasTeamsContext: !!this.context.sdks.microsoftTeams,
         userDisplayName: this.context.pageContext.user.displayName,
-        showAll: this.properties.showAll
+        showAll: this.properties.showAll,
       }
     );
 
@@ -84,24 +85,24 @@ export default class FsposKwitterWebPart extends BaseClientSideWebPart<IFsposKwi
           let environmentMessage: string = '';
           switch (context.app.host.name) {
             case 'Office': // running in Office
-              environmentMessage = this.context.isServedFromLocalhost ? strings.AppLocalEnvironmentOffice : strings.AppOfficeEnvironment;
+              environmentMessage = this.context.isServedFromLocalhost ? config.AppLocalEnvironmentOffice : config.AppOfficeEnvironment;
               break;
             case 'Outlook': // running in Outlook
-              environmentMessage = this.context.isServedFromLocalhost ? strings.AppLocalEnvironmentOutlook : strings.AppOutlookEnvironment;
+              environmentMessage = this.context.isServedFromLocalhost ? config.AppLocalEnvironmentOutlook : config.AppOutlookEnvironment;
               break;
             case 'Teams': // running in Teams
             case 'TeamsModern':
-              environmentMessage = this.context.isServedFromLocalhost ? strings.AppLocalEnvironmentTeams : strings.AppTeamsTabEnvironment;
+              environmentMessage = this.context.isServedFromLocalhost ? config.AppLocalEnvironmentTeams : config.AppTeamsTabEnvironment;
               break;
             default:
-              environmentMessage = strings.UnknownEnvironment;
+              environmentMessage = config.UnknownEnvironment;
           }
 
           return environmentMessage;
         });
     }
 
-    return Promise.resolve(this.context.isServedFromLocalhost ? strings.AppLocalEnvironmentSharePoint : strings.AppSharePointEnvironment);
+    return Promise.resolve(this.context.isServedFromLocalhost ? config.AppLocalEnvironmentSharePoint : config.AppSharePointEnvironment);
   }
 
   protected onThemeChanged(currentTheme: IReadonlyTheme | undefined): void {
@@ -135,17 +136,17 @@ export default class FsposKwitterWebPart extends BaseClientSideWebPart<IFsposKwi
       pages: [
         {
           header: {
-            description: strings.PropertyPaneDescription
+            description: config.PropertyPaneDescription
           },
           groups: [
             {
-              groupName: strings.BasicGroupName,
+              groupName: config.BasicGroupName,
               groupFields: [
-                PropertyPaneTextField('description', {
-                  label: strings.DescriptionFieldLabel
+                PropertyPaneTextField('listName', {
+                  label: config.ListNameFieldLabel
                 }),
-                PropertyPaneTextField('showAll', {
-                  label: strings.DescriptionFieldLabel
+                PropertyPaneToggle('showAll', {
+                  label: config.ShowAllFieldLabel
                 })
               ]
             }
