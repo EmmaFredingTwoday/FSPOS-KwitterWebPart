@@ -7,6 +7,7 @@ import {
 } from '@fluentui/react/lib';
 import { getSP } from '../pnpjsConfig';
 import { Logger, LogLevel } from "@pnp/logging";
+import styles from './FsposKwitter.module.scss';
 
 const KwitterDialogContent: React.FC<IKwitterDialogProps> = (props) => {
     const [header] = useState('');

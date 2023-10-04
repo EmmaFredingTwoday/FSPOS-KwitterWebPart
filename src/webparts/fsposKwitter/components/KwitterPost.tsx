@@ -1,9 +1,11 @@
 import React, { useState } from "react";
 import { getSP } from '../pnpjsConfig';
 import { Icon } from '@fluentui/react/lib/Icon';
-import dayjs from 'dayjs';  
+import dayjs from 'dayjs'; 
+import relativeTime from 'dayjs/plugin/relativeTime';
 import styles from './FsposKwitter.module.scss';
 
+dayjs.extend(relativeTime);
 interface IKwitterPostProps {
   showAll: boolean;
   items: any[];
@@ -91,39 +93,39 @@ const KwitterPost: React.FC<IKwitterPostProps> = ({ showAll, items, handleItemUp
         {/* Render popular posts */}
         {popularPosts.map((item: any) => (
           <div className={styles["tweet-wrap"]} key={item.Id}>
+            <img src={'blob:https://ovning.sharepoint.com/782450bc-d0f6-4ff8-a73c-268c38f16838'} className={styles.profileImage} alt="Profile" />
             <div className={styles["tweet-header"]}>
-              <img src={item.logo} alt="" className={styles.avator} />
+              {/* <img src={item.fulllogourl} alt="" className={styles.avator} /> */}
               <div className="tweet-header-info">
-                <span>@{item.Title}</span> <span> { dayjs(item.Created).format("YYYY-MM-DD HH:mm")} </span>
+                <span>@{item.Title}</span> <span> {dayjs(item.Created).fromNow()} </span>
                 <p>{item.Text}</p>
+                <div>{renderHashtags(item.hashtag)}</div>
+                <div className={styles["tweet-info-counts"]}>
+                  <Icon iconName="Like" onClick={() => onLike(item)} />
+                  <div className={styles.likes}>{item.Likes}</div>
+                  <Icon iconName="hashtag" />
+                </div>
               </div>
-            </div>
-            <div className={styles["tweet-info-counts"]}>
-              {renderHashtags(item.hashtag)}
-              <Icon iconName="Like" onClick={() => onLike(item)} />
-              <div className={styles.likes}>{item.Likes}</div>
-              <Icon iconName="hashtag" />
-              <div>This was liked by {item.Likedby}</div>
             </div>
           </div>
         ))}
         {/* Render regular posts */}
         {regularPosts.map((item: any) => (
           <div className={styles["tweet-wrap"]} key={item.Id}>
+              <img src={'blob:https://ovning.sharepoint.com/782450bc-d0f6-4ff8-a73c-268c38f16838'} className={styles.profileImage} alt="Profile" />
               <div className={styles["tweet-header"]}>
-                <img src={item.logo} alt="" className={styles.avator} />
+                {/* <img src={item.logo} alt="" className={styles.avator} /> */}
                 <div className="tweet-header-info">
-                  <span>@{item.Title}</span> <span> { dayjs(item.Created).format("YYYY-MM-DD HH:mm")} </span>
+                  <span>@{item.Title}</span> <span> {dayjs(item.Created).fromNow()} </span>
                   <p>{item.Text}</p>
+                  <div>{renderHashtags(item.hashtag)}</div>
+                    <div className={styles["tweet-info-counts"]}>
+                    <Icon iconName="Like" onClick={() => onLike(item)} />
+                    <div className={styles.likes}>{item.Likes}</div>
+                    <Icon iconName="hashtag" />
+                  </div>
                 </div>
               </div>
-            <div className={styles["tweet-info-counts"]}>
-              {renderHashtags(item.hashtag)}
-              <Icon iconName="Like" onClick={() => onLike(item)} />
-              <div className={styles.likes}>{item.Likes}</div>
-              <Icon iconName="hashtag" />
-              <div>This was liked by {item.Likedby}</div>
-            </div>
           </div>
         ))}
       </section>
