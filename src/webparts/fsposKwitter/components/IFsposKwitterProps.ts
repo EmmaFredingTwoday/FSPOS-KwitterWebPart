@@ -6,4 +6,5 @@ export interface IFsposKwitterProps {
   userDisplayName: string;
   showAll: boolean;
   currentUser: any;
+  showButton: boolean;
 }

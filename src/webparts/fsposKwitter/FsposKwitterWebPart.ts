@@ -42,6 +42,7 @@ export interface IFsposKwitterWebPartProps {
   listName: string;
   showAll: boolean;
   user: any;
+  showButton: boolean;
 }
 
 export default class FsposKwitterWebPart extends BaseClientSideWebPart<IFsposKwitterWebPartProps> {
@@ -56,6 +57,7 @@ export default class FsposKwitterWebPart extends BaseClientSideWebPart<IFsposKwi
       {
         currentUser: user,
         listName: this.properties.listName,
+        showButton: this.properties.showButton,
         isDarkTheme: this._isDarkTheme,
         environmentMessage: this._environmentMessage,
         hasTeamsContext: !!this.context.sdks.microsoftTeams,
@@ -72,7 +74,8 @@ export default class FsposKwitterWebPart extends BaseClientSideWebPart<IFsposKwi
       //Initialize our _sp object that we can then use in other packages without having to pass around the context.
 	  // Check out pnpjsConfig.ts for an example of a project setup file.
 	  getSP(this.context);
-
+    
+    this.properties.showButton = true;
     return this._getEnvironmentMessage().then(message => {
       this._environmentMessage = message;
     });
@@ -143,10 +146,16 @@ export default class FsposKwitterWebPart extends BaseClientSideWebPart<IFsposKwi
               groupName: config.BasicGroupName,
               groupFields: [
                 PropertyPaneTextField('listName', {
-                  label: config.ListNameFieldLabel
+                  label: config.ListNameFieldLabel,
+                  value: "Kwitter"
                 }),
                 PropertyPaneToggle('showAll', {
-                  label: config.ShowAllFieldLabel
+                  label: config.ShowAllFieldLabel,
+                  checked:true
+                }),
+                PropertyPaneToggle('showButton', {
+                  label: config.ShowButtonFieldLabel,
+                  checked: true
                 })
               ]
             }

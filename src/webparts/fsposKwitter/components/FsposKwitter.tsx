@@ -17,6 +17,7 @@ const FsposKwitter: React.FC<IFsposKwitterProps> = ({ currentUser, ...props }) =
         .items
         .orderBy("Created", false)(); 
       setItems(response);
+      console.log(response);
     } catch (err) {
       Logger.write(`(_readAllKwitterItems) - ${JSON.stringify(err)} - `, LogLevel.Error);
     }
@@ -31,12 +32,20 @@ const FsposKwitter: React.FC<IFsposKwitterProps> = ({ currentUser, ...props }) =
     _readAllKwitterItems().catch(console.error);
   }, []);
 
+  if(props.showButton === true){
+    return (
+      <section>
+        <ShowDialog onClose={() => console.log("Closed")} onSave={() => console.log("Saved")} updatePosts={_readAllKwitterItems} currentUser={currentUser} list={props.listName}/>
+        <KwitterPost showAll={props.showAll} items={items} handleItemUpdate={handleItemUpdate} currentUser={currentUser} list={props.listName} />
+      </section>
+    );
+  }else{
   return (
-    <section>
-      <ShowDialog onClose={() => console.log("Closed")} onSave={() => console.log("Saved")} updatePosts={_readAllKwitterItems} currentUser={currentUser} list={props.listName}/>
-      <KwitterPost showAll={props.showAll} items={items} handleItemUpdate={handleItemUpdate} currentUser={currentUser} list={props.listName}/>
-    </section>
-  );
+      <section>
+        <KwitterPost showAll={props.showAll} items={items} handleItemUpdate={handleItemUpdate} currentUser={currentUser} list={props.listName} />
+      </section>
+    );
+  }
 };
 
 export default FsposKwitter;

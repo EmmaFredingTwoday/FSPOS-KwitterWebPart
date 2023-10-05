@@ -51,7 +51,7 @@ const KwitterPost: React.FC<IKwitterPostProps> = ({ showAll, items, handleItemUp
   const filterItemsByUser = (items: any[]) => {
     if (showAll) return items;
     console.log("Items?", items, currentUserId)
-    return items.filter(item => item.Title === currentUser.displayName);
+    return items.filter(item => item.Title === currentUser.displayName || item.tagCompany === ("@" + currentUser.displayName));
   };
 
   const filterItemsByHashtag = (items: any[]) => {
@@ -93,12 +93,13 @@ const KwitterPost: React.FC<IKwitterPostProps> = ({ showAll, items, handleItemUp
         {/* Render popular posts */}
         {popularPosts.map((item: any) => (
           <div className={styles["tweet-wrap"]} key={item.Id}>
-            <img src={'blob:https://ovning.sharepoint.com/782450bc-d0f6-4ff8-a73c-268c38f16838'} className={styles.profileImage} alt="Profile" />
+            <img src={item.fulllogourl} className={styles.profileImage} alt="Profile" />
             <div className={styles["tweet-header"]}>
               {/* <img src={item.fulllogourl} alt="" className={styles.avator} /> */}
               <div className="tweet-header-info">
+                <div>{item.Title}</div>
                 <span>@{item.Title}</span> <span> {dayjs(item.Created).fromNow()} </span>
-                <p>{item.Text}</p>
+                <p>{item.Text} {item.tagCompany}</p>
                 <div>{renderHashtags(item.hashtag)}</div>
                 <div className={styles["tweet-info-counts"]}>
                   <Icon iconName="Like" onClick={() => onLike(item)} />
@@ -112,12 +113,13 @@ const KwitterPost: React.FC<IKwitterPostProps> = ({ showAll, items, handleItemUp
         {/* Render regular posts */}
         {regularPosts.map((item: any) => (
           <div className={styles["tweet-wrap"]} key={item.Id}>
-              <img src={'blob:https://ovning.sharepoint.com/782450bc-d0f6-4ff8-a73c-268c38f16838'} className={styles.profileImage} alt="Profile" />
+              <img src={item.fulllogourl} className={styles.profileImage} alt="Profile" />
               <div className={styles["tweet-header"]}>
                 {/* <img src={item.logo} alt="" className={styles.avator} /> */}
                 <div className="tweet-header-info">
+                  <div>{item.Title}</div>
                   <span>@{item.Title}</span> <span> {dayjs(item.Created).fromNow()} </span>
-                  <p>{item.Text}</p>
+                  <p>{item.Text} {item.tagCompany}</p>
                   <div>{renderHashtags(item.hashtag)}</div>
                     <div className={styles["tweet-info-counts"]}>
                     <Icon iconName="Like" onClick={() => onLike(item)} />

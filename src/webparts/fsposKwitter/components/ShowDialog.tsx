@@ -20,13 +20,13 @@ const ShowDialog: React.FC<IKwitterDialogProps> = ({ updatePosts, onClose, onSav
     setShowDialog(false);
 };
 
-  const handleDialogSave = async (header: string, content: string) => {
+  const handleDialogSave = async (header: string, content: string, tagCompany: string) => {
     await updatePosts();
     setShowDialog(false);
   };
   return (
     <section>
-      <div style={{ textAlign: 'right', marginTop: '10px', marginRight: '12px', marginBottom: '24px' }}>
+      <div style={{ textAlign: 'center', marginTop: '10px', marginRight: '12px', marginBottom: '24px' }}>
         <PrimaryButton text='Skriv inlägg' style={{ backgroundColor: '#00453C' }} onClick={() => setShowDialog(true)} />
       </div>
       {showDialog && <KwitterDialog onSave={handleDialogSave} onClose={handleDialogClose} list={props.list} currentUser={props.currentUser} />}

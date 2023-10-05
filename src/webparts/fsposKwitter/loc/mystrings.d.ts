@@ -12,6 +12,7 @@ declare interface IFsposKwitterWebPartConfig {
   AppOfficeEnvironment: string;
   AppOutlookEnvironment: string;
   UnknownEnvironment: string;
+  ShowButtonFieldLabel: string;
 }
 
 declare module 'FsposKwitterWebPartStrings' {

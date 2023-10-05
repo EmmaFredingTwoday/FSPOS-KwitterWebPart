@@ -4,6 +4,7 @@ define([], function() {
     "BasicGroupName": "Group Name",
     "ListNameFieldLabel": "List Name",
     "ShowAllFieldLabel": "Show All",
+    "ShowButtonFieldLabel": "Show 'Skapa nytt inlägg' button",
     "AppLocalEnvironmentSharePoint": "The app is running on your local environment as SharePoint web part",
     "AppLocalEnvironmentTeams": "The app is running on your local environment as Microsoft Teams app",
     "AppLocalEnvironmentOffice": "The app is running on your local environment in office.com",
