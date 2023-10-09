@@ -75,7 +75,6 @@ export default class FsposKwitterWebPart extends BaseClientSideWebPart<IFsposKwi
 	  // Check out pnpjsConfig.ts for an example of a project setup file.
 	  getSP(this.context);
     
-    this.properties.showButton = true;
     return this._getEnvironmentMessage().then(message => {
       this._environmentMessage = message;
     });
