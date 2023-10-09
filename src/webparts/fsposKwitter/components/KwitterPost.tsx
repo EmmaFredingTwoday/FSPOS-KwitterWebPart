@@ -1,110 +1,176 @@
-import * as React from "react";
-import { IKwitterItem, IResponseItem  } from './Interfaces';
-import { Logger, LogLevel } from "@pnp/logging";
-import { Caching } from "@pnp/queryable";
-import { SPFI, spfi } from "@pnp/sp";
+import React, { useState } from "react";
 import { getSP } from '../pnpjsConfig';
-
 import { Icon } from '@fluentui/react/lib/Icon';
-import dayjs from 'dayjs';
-
-//const IconTest = () => <Icon iconName="Like" />;
-  
+import dayjs from 'dayjs'; 
+import relativeTime from 'dayjs/plugin/relativeTime';
 import styles from './FsposKwitter.module.scss';
 
-export interface IKwitterPostState {
-    items: IKwitterItem[];
-    filterItems: IKwitterItem[];
+dayjs.extend(relativeTime);
+
+interface IKwitterPostProps {
+  showAll: boolean;
+  items: any[];
+  handleItemUpdate: (updatedItem: any) => void;
+  currentUser: any;
+  popularThreshold?: number;
+  list: string;
 }
 
-export interface IKwitterPost {
-    showAll: boolean;
-}
+const KwitterPost: React.FC<IKwitterPostProps> = ({ showAll, items, handleItemUpdate, currentUser, popularThreshold = 30, ...props }) => {
+  const currentUserId = currentUser.loginName;
+  const _sp = React.useRef(getSP());
 
+  const [currentFilter, setCurrentFilter] = useState('');
+  const [currentMention, setCurrentMention] = useState('');
 
-export default class KwitterPost extends React.Component<IKwitterPost, IKwitterPostState> {
-   
-    private LOG_SOURCE = "🅿PnPjsExample";
-    private _sp: SPFI;  
+  const updateLikedBy = async (item: any, updatedLikes: number, updatedLikedByArray: string[]) => {
+    await _sp.current.web.lists.getByTitle(props.list).items.getById(item.Id).update({
+      Likes: updatedLikes,
+      Likedby: JSON.stringify(updatedLikedByArray)
+    });
+  };
 
-    constructor(props:IKwitterPost){
-        super(props);
-    
-        //Set initial state
-        this.state = {
-          items: [],
-          filterItems: []
-        }
-        this._sp = getSP();
-      }
-    
-    public render(): React.ReactElement<IKwitterPost> {
-        
-    this._readAllKwitterItems();
-    return (
-            <div>
-                <section>
-                    {this.state.items.map((item) => {
-                        const shortDateFormat = dayjs(item.Created).format("YYYY-MM-DD HH:mm")
-                        return( <div className={styles["tweet-wrap"]}>
-                                    <div className={styles["tweet-header"]}>
-                                    <img src={item.logo} alt="" className={styles.avator} />
-                                    <div className="tweet-header-info">
-                                            {item.Title} <span>@{item.atTag}</span> <span>. {shortDateFormat} </span>
-                                            <p>{item.content}</p>                        
-                                    </div>
-                                    </div>
-                                        <div className={styles["tweet-info-counts"]}>                 
-                                            <Icon iconName="Like"/>
-                                            <div className={styles.likes}>{item.likes}</div>
-                                            <Icon iconName="hashtag" />
-                                        </div>                                     
-                                </div>
-                            )    
-                        })
-                    }
-                </section>    
-            </div>
+  const onLike = async (item: any) => {
+    const likedByArray = item.Likedby ? JSON.parse(item.Likedby) : [];
+    let updatedLikes = item.Likes;
+    let updatedLikedByArray = [...likedByArray];
+
+    if (likedByArray.includes(currentUserId)) {
+      updatedLikes -= 1;
+      updatedLikedByArray = updatedLikedByArray.filter(id => id !== currentUserId);
+    } else {
+      updatedLikes += 1;
+      updatedLikedByArray.push(currentUserId);
+    }
+
+    await updateLikedBy(item, updatedLikes, updatedLikedByArray);
+    const updatedItem = { ...item, Likedby: JSON.stringify(updatedLikedByArray), Likes: updatedLikes };
+    handleItemUpdate(updatedItem);
+  };
+
+  const extractMentions = (text: string) => {
+    const mentionRegex = /@(\w+)/g;
+    const matches = text.match(mentionRegex);
+    return matches || [];
+  };
+
+  const filterItemsByUser = (items: any[]) => {
+    if (showAll) return items;
+    return items.filter(item => item.Title === currentUser.displayName);
+  };
+
+  const filterItemsByHashtag = (items: any[]) => {
+    if (!currentFilter) return items;
+    return items.filter(item => {
+      const hashtags = item.hashtag ? JSON.parse(item.hashtag) : [];
+      return hashtags.includes(currentFilter);
+    });
+  };
+
+  const filterItemsByMention = (items: any[]) => {
+    if (!currentMention) return items;
+    return items.filter(item => {
+      const mentions = extractMentions(item.Text);
+      return mentions.some(mention => mention === currentMention); // Using .some() here
+    });
+  };
+
+  const renderHashtags = (hashtagString: string) => {
+    const hashtags = hashtagString ? JSON.parse(hashtagString) : [];
+    if (hashtags.length === 0 || hashtags[0] === '') return null;
+    return hashtags.map((hashtag: any, index: any) => (
+      <span key={index} onClick={() => setCurrentFilter(hashtag)} className={styles.hashtag}>#{hashtag}</span>
+    ));
+  };
+
+  const renderMentions = (text: string) => {
+    const mentionRegex = /(@\w+)/g;
+    const parts = text.split(mentionRegex);
+    return parts.map((part, index) => {
+        if (part.indexOf('@') === 0) {
+            return (
+                <span 
+                    key={index} 
+                    onClick={() => setCurrentMention(part)} 
+                    className={styles.mention ? styles.mention : ''}
+                >
+                    {part}  
+                </span>
             );
         }
+        return part;
+    });
+  };
 
-  private _readAllKwitterItems = async(): Promise<void> => {
-    try{
-      const spCache = spfi(this._sp).using(Caching({store:"session"}));
+  const getSeparatedPosts = (items: any[], threshold: number) => {
+    const filteredItems = filterItemsByMention(filterItemsByHashtag(filterItemsByUser(items)));
+    const popularPosts = filteredItems.filter(item => item.Likes > threshold).slice(0, 3);
+    const regularPosts = filteredItems.filter(item => popularPosts.indexOf(item) === -1);
+    return {
+      popularPosts,
+      regularPosts
+    };
+  };
 
-      const response: IKwitterItem[] = await spCache.web.lists
-        .getById('61ed2056-88b9-47e1-b25b-170a2fd278b8')
-        .items
-        .select("Id", "Title", "content", "logo", "Created","likes","atTag")
-        .orderBy("Created", false)();
+  const { popularPosts, regularPosts } = getSeparatedPosts(items, popularThreshold);
 
-      // use map to convert IResponseItem[] into our internal object IFile[]
-      const items: IKwitterItem[] = response.map((item: IResponseItem) => {
-        return {
-          Id: item.Id,
-          Title: item.Title,
-          content: item.content,
-          logo: item.logo,
-          Created: item.Created,
-          likes: item.likes,
-          atTag: item.atTag
-        };
-      });
-
-      
-      //const filterItems = items.filter(item => item.atTag.match("Loomis"));
-      //console.log("Show all " + filterItems)
-      if(this.props.showAll){
-        this.setState({items});
-      }
-      else{
-        //Show all items
-        this.setState({ items });
-      }
-    } 
-      catch(err){
-      Logger.write(`${this.LOG_SOURCE} (_readAllKwitterItems) - ${JSON.stringify(err)} - `, LogLevel.Error);
-    }
-  }
-
+  return (
+    <div>
+      {currentFilter && (
+        <div>
+          Filtering by: #{currentFilter}
+          <button onClick={() => setCurrentFilter('')}>Clear Filter</button>
+        </div>
+      )}
+      {currentMention && (
+        <div>
+          Filtering by: {currentMention}
+          <button onClick={() => setCurrentMention('')}>Clear Mention Filter</button>
+        </div>
+      )}
+      <div style={{'backgroundColor': '#00453C'}}>
+        <img src={'blob:https://ovning.sharepoint.com/af87cb8f-9d2c-4885-81ef-bb034966de9d'}/>
+      </div>
+      <section>
+        {/* Render popular posts */}
+        {popularPosts.map((item: any) => (
+          <div className={styles["tweet-wrap"]} key={item.Id}>
+            <img src={'blob:https://ovning.sharepoint.com/782450bc-d0f6-4ff8-a73c-268c38f16838'} className={styles.profileImage} alt="Profile" />
+            <div className={styles["tweet-header"]}>
+              <div className="tweet-header-info">
+                <span>@{item.Title}</span> <span> {dayjs(item.Created).fromNow()} </span>
+                <p>{renderMentions(item.Text)}</p>
+                <div>{renderHashtags(item.hashtag)}</div>
+                <div className={styles["tweet-info-counts"]}>
+                  <Icon iconName="Like" onClick={() => onLike(item)} />
+                  <div className={styles.likes}>{item.Likes}</div>
+                  <Icon iconName="hashtag" />
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+        {/* Render regular posts */}
+        {regularPosts.map((item: any) => (
+          <div className={styles["tweet-wrap"]} key={item.Id}>
+            <img src={'blob:https://ovning.sharepoint.com/782450bc-d0f6-4ff8-a73c-268c38f16838'} className={styles.profileImage} alt="Profile" />
+            <div className={styles["tweet-header"]}>
+              <div className="tweet-header-info">
+                <span>@{item.Title}</span> <span> {dayjs(item.Created).fromNow()} </span>
+                <p>{renderMentions(item.Text)}</p>
+                <div>{renderHashtags(item.hashtag)}</div>
+                <div className={styles["tweet-info-counts"]}>
+                  <Icon iconName="Like" onClick={() => onLike(item)} />
+                  <div className={styles.likes}>{item.Likes}</div>
+                  <Icon iconName="hashtag" />
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </section>
+    </div>
+  );
 }
+
+export default KwitterPost;

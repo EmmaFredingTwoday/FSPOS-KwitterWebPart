@@ -1,8 +1,9 @@
 export interface IFsposKwitterProps {
-  description: string;
+  listName: string;
   isDarkTheme: boolean;
   environmentMessage: string;
   hasTeamsContext: boolean;
   userDisplayName: string;
   showAll: boolean;
+  currentUser: any;
 }

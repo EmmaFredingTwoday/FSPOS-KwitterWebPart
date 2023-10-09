@@ -1,25 +1,42 @@
 import * as React from 'react';
-import type { IFsposKwitterProps} from './IFsposKwitterProps';
-import  KwitterPost from './KwitterPost';
+import type { IFsposKwitterProps } from './IFsposKwitterProps';
+import KwitterPost from './KwitterPost';
 import ShowDialog from './ShowDialog';
+import { IKwitterItem } from './Interfaces';
+import { Logger, LogLevel } from "@pnp/logging";
+import { getSP } from '../pnpjsConfig';
 
-export default class FsposKwitter extends React.Component<IFsposKwitterProps, {}> {  
- 
-   public render(): React.ReactElement<IFsposKwitterProps> {
-   console.log(this.props.showAll)
-    return (
-      <section>
-      <ShowDialog onClose={this._close} onSave={this._save}/>
-      <KwitterPost showAll={this.props.showAll}/>
-      </section>
-    );
-  }  
+const FsposKwitter: React.FC<IFsposKwitterProps> = ({ currentUser, ...props }) => {
+  const [items, setItems] = React.useState<any>([]);
+  const _sp = React.useRef(getSP());
 
-  private _close = async (): Promise<void> => {
-   // await this.close();
-   // await this.onClose();
-  }
+  const _readAllKwitterItems = async () => {
+    try {
+      const response: IKwitterItem[] = await _sp.current.web.lists
+        .getByTitle(props.listName)
+        .items
+        .orderBy("Created", false)(); 
+      setItems(response);
+    } catch (err) {
+      Logger.write(`(_readAllKwitterItems) - ${JSON.stringify(err)} - `, LogLevel.Error);
+    }
+  };
 
-  private _save = async (): Promise<void> => {
-  }
-}
+  const handleItemUpdate = (updatedItem: any) => {
+    const newItems = items.map((item : any) => item.Id === updatedItem.Id ? updatedItem : item);
+    setItems(newItems);
+  };
+
+  React.useEffect(() => {
+    _readAllKwitterItems().catch(console.error);
+  }, []);
+
+  return (
+    <section>
+      <ShowDialog onClose={() => console.log("Closed")} onSave={() => console.log("Saved")} updatePosts={_readAllKwitterItems} currentUser={currentUser} list={props.listName}/>
+      <KwitterPost showAll={props.showAll} items={items} handleItemUpdate={handleItemUpdate} currentUser={currentUser} list={props.listName}/>
+    </section>
+  );
+};
+
+export default FsposKwitter;

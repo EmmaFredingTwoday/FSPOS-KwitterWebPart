@@ -1,7 +1,8 @@
-declare interface IFsposKwitterWebPartStrings {
+declare interface IFsposKwitterWebPartConfig {
   PropertyPaneDescription: string;
   BasicGroupName: string;
-  DescriptionFieldLabel: string;
+  ListNameFieldLabel: string;
+  ShowAllFieldLabel: string;
   AppLocalEnvironmentSharePoint: string;
   AppLocalEnvironmentTeams: string;
   AppLocalEnvironmentOffice: string;
@@ -14,6 +15,6 @@ declare interface IFsposKwitterWebPartStrings {
 }
 
 declare module 'FsposKwitterWebPartStrings' {
-  const strings: IFsposKwitterWebPartStrings;
-  export = strings;
+  const config: IFsposKwitterWebPartConfig;
+  export = config;
 }

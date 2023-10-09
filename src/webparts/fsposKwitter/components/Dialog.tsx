@@ -1,124 +1,98 @@
-import * as React from 'react';
-import * as ReactDOM from 'react-dom';
-//import styles from './FsposKwitter.module.scss';
+import React, { useState } from 'react';
 import { IKwitterDialogProps } from './IDialogProps';
-import { IKwitterDialogState } from './IDialogState';
-import { IItemAddResult } from '@pnp/sp/items';
-import { BaseDialog, IDialogConfiguration } from '@microsoft/sp-dialog';
 import {
-    TextField,
-    DefaultButton,
-    PrimaryButton,
-    DialogFooter,
-    DialogContent
+    TextField, 
+    DefaultButton, PrimaryButton,
+    DialogFooter, DialogContent
 } from '@fluentui/react/lib';
-import { SPFI, spfi } from "@pnp/sp";
 import { getSP } from '../pnpjsConfig';
 import { Logger, LogLevel } from "@pnp/logging";
-import { Caching } from "@pnp/queryable";
 
-class KwitterDialogContent extends React.Component<IKwitterDialogProps, IKwitterDialogState> {
+const KwitterDialogContent: React.FC<IKwitterDialogProps> = (props) => {
+    const [header] = useState('');
+    const [content, setContent] = useState('');
+    const [hashtagString, setHashtagString] = useState('');
+    const [hashtagError, setHashtagError] = useState<string | undefined>();
 
-    constructor(props: IKwitterDialogProps) {
-        super(props);
+    const validateHashtags = (value: string) => {
+        // Regular expression to match strings that do not contain spaces
+        // and are comma-separated. This will also exclude trailing commas.
+        const regex = /^#?[^\s,]+(,#?[^\s,]+)*$/;
+        if (value && !regex.test(value)) {
+            setHashtagError("Hashtags should not have spaces and must be comma-separated without trailing commas.");
+        } else {
+            setHashtagError(undefined);
+        }
+    };
 
-        this.state = {
-            header: '',
-            content:'',
-            author:''
-        };        
+    return (
+        <div>
+            <DialogContent title="Skriv nytt inlägg" onDismiss={props.onClose}>
+                <div>
+                    <TextField
+                        label="Innehåll"
+                        rows={10}
+                        multiline
+                        onChange={(e, newValue) => setContent(newValue || '')}
+                        value={content}
+                    />
+                    <TextField
+                        label="Hashtags (comma separated)"
+                        onChange={(e, newValue) => {
+                            setHashtagString(newValue || '');
+                            validateHashtags(newValue || '');
+                        }}
+                        onBlur={(e) => validateHashtags((e.target as HTMLInputElement).value)}
+                        value={hashtagString}
+                        errorMessage={hashtagError}
+                        placeholder="e.g. #fun, #sunnyday"
+                    />
+                </div>
+                <DialogFooter>
+                    <DefaultButton text="Cancel" title="Cancel" onClick={props.onClose} />
+                    <PrimaryButton
+                        text="Skapa inlägg"
+                        title="Skapa inlägg"
+                        style={{ backgroundColor: '#00453C' }}
+                        onClick={async () => {
+                            await props.onSave(header, content, hashtagString, props.list, props.currentUser);
+                        }}
+                    />
+                </DialogFooter>
+            </DialogContent>
+        </div>
+    );
+}
+
+const KwitterDialog = ({ onSave, onClose, ...props }: IKwitterDialogProps) => {
+    const _sp = getSP();
+    const LOG_SOURCE = "🅿PnPjsExample";
+
+    const _saveToList = async (header: string, content: string, hashtagString: string, list: string, currentUser: any) => {
+        try {
+            const hashtagsArray = hashtagString.split(',').map(tag => tag.trim().replace(/^#/, ''));
+            console.log("Attempting to save", currentUser, content)
+            await _sp.web.lists.getByTitle(list).items.add({
+                Title: currentUser.displayName,
+                Text: content || "Unknown",
+                Likes: 0,
+                hashtag: JSON.stringify(hashtagsArray),
+                profileimage: currentUser.displayName
+            });
+        } catch (err) {
+            Logger.write(`${LOG_SOURCE} (_saveToList) - ${JSON.stringify(err)} - `, LogLevel.Error);
+        }
+        await onSave(header, content, hashtagString, list, currentUser);
     }
     
-    public render(): JSX.Element {
-        return (<div>
-            <DialogContent
-                title="Skriv nytt inlägg"
-                onDismiss={this.props.onClose}
-                >
-            <div>
-                <div>
-                    <TextField label="#"
-                        onChange={this._onheaderChange}
-                        value={this.state.header} />
-                    <TextField label="Innehåll"
-                        rows={10}
-                        multiline={true}
-                        onChange={this._onContentChange}
-                        value={this.state.content} />                    
-                </div>
-            </div>
-
-            <DialogFooter>
-                <DefaultButton text="Cancel"
-                        title="Cancel" onClick={this.props.onClose} />
-                <PrimaryButton text="Skapa inlägg"
-                        title="Skapa inlägg" onClick={async () => { await this.props.onSave(this.state.header!, this.state.content!); }} />
-            </DialogFooter>
-        </DialogContent>
-    </div>);
-    }
-
-    private _onheaderChange = (event: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>, newValue?: string): void => {
-        this.setState({ header: newValue });
-    }
-
-    private _onContentChange = (event: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>, newValue?: string): void => {
-        this.setState({ content: newValue });
-    }
+    return (
+        <KwitterDialogContent
+            onSave={_saveToList}
+            onClose={onClose}
+            list={props.list}
+            currentUser={props.currentUser}
+        />
+    ); 
 }
 
-export default class KwitterDialog extends BaseDialog {
-    private _sp: SPFI; 
-    private LOG_SOURCE = "🅿PnPjsExample";
-    /**
-     * Constructor for the dialog window
-     */
-    constructor(
-        public onSave: (header: string, content: string) => Promise<void>,
-        public onClose: () => Promise<void>) {
-        super({isBlocking: true});        
-        this._sp = getSP();
-    }
-  
-    public render(): void {
-        ReactDOM.render(<KwitterDialogContent
-                onSave={this._saveToList}
-                onClose={this._close}
-            />,
-            this.domElement);
-    }
-  
-    public getConfig(): IDialogConfiguration {
-      return {
-        isBlocking: true
-      };
-    }
-
-    protected onAfterClose(): void {
-        ReactDOM.unmountComponentAtNode(this.domElement);
-    }
-
-    private _saveToList = async (header: string, content: string): Promise<void> => {
-        try{
-            const spCache = spfi(this._sp).using(Caching({store:"session"}));
-              const iar:IItemAddResult = await spCache.web.lists.getById('61ed2056-88b9-47e1-b25b-170a2fd278b8').items.add({
-                  Title: "Loomis",
-                  hashtag: header || "Unknown",
-                  content: content || "Unknown",
-                  atTag: "Loomis",
-                  likes: 0,
-                })
-                console.log(iar);
-            } 	
-            catch(err){
-            Logger.write(`${this.LOG_SOURCE} (_saveToList) - ${JSON.stringify(err)} - `, LogLevel.Error);
-        }        
-        await this.onSave(header, content);
-        await this.close();
-    }
-  
-    private _close = async (): Promise<void> => {
-        await this.close();
-        await this.onClose();
-    }
-}
+export default KwitterDialog;
