@@ -30,3 +30,7 @@ export interface IImageFile{
     Created: Date;
     likes: number;
   }
+  export interface IDDOption {
+    id: string;
+    key: string;
+  }

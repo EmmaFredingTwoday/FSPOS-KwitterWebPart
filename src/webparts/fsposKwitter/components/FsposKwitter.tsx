@@ -2,12 +2,13 @@ import * as React from 'react';
 import type { IFsposKwitterProps } from './IFsposKwitterProps';
 import KwitterPost from './KwitterPost';
 import ShowDialog from './ShowDialog';
-import { IKwitterItem } from './Interfaces';
+import { IKwitterItem, IDDOption } from './Interfaces';
 import { Logger, LogLevel } from "@pnp/logging";
 import { getSP } from '../pnpjsConfig';
 
 const FsposKwitter: React.FC<IFsposKwitterProps> = ({ currentUser, ...props }) => {
-  const [items, setItems] = React.useState<any>([]);
+  const [items, setItems] = React.useState<any>([]);  
+  const [dropdownOptions, setDropdownOptions] = React.useState<any>([]);
   const _sp = React.useRef(getSP());
 
   const _readAllKwitterItems = async () => {
@@ -17,9 +18,25 @@ const FsposKwitter: React.FC<IFsposKwitterProps> = ({ currentUser, ...props }) =
         .items
         .orderBy("Created", false)(); 
       setItems(response);
+      _getDropDownOptions(response);
     } catch (err) {
       Logger.write(`(_readAllKwitterItems) - ${JSON.stringify(err)} - `, LogLevel.Error);
     }
+  };
+
+  const _getDropDownOptions = async (items: IKwitterItem[]) => {
+ 
+    const uniqueTitle = [...new Map(items.map(v => [v.Title, v])).values()]
+    let ddOptions: IDDOption[] = [];
+    uniqueTitle.forEach(item => {
+      let value = {
+        key: item.Title, id: item.Title
+      }
+      ddOptions.push(value)
+    }) 
+    setDropdownOptions(ddOptions);
+    console.log("ddoptions "+  JSON.stringify(ddOptions));
+    console.log("dropdownOptions " + dropdownOptions)
   };
 
   const handleItemUpdate = (updatedItem: any) => {
