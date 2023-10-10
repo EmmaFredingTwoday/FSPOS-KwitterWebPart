@@ -22,12 +22,23 @@ const KwitterPost: React.FC<IKwitterPostProps> = ({ showAll, items, handleItemUp
 
   const [currentFilter, setCurrentFilter] = useState('');
   const [currentMention, setCurrentMention] = useState('');
+  const [sortType, setSortType] = useState<'default' | 'latest' | 'mostLikes'>('default');
 
   const updateLikedBy = async (item: any, updatedLikes: number, updatedLikedByArray: string[]) => {
     await _sp.current.web.lists.getByTitle(props.list).items.getById(item.Id).update({
       Likes: updatedLikes,
       Likedby: JSON.stringify(updatedLikedByArray)
     });
+  };
+
+  const sortRegularPosts = (posts: any[]) => {
+    if (sortType === 'latest') {
+      return [...posts].sort((a, b) => new Date(b.Created).getTime() - new Date(a.Created).getTime());
+    }
+    if (sortType === 'mostLikes') {
+      return [...posts].sort((a, b) => b.Likes - a.Likes);
+    }
+    return posts;  // default sort
   };
 
   const onLike = async (item: any) => {
@@ -44,14 +55,9 @@ const KwitterPost: React.FC<IKwitterPostProps> = ({ showAll, items, handleItemUp
     }
 
     await updateLikedBy(item, updatedLikes, updatedLikedByArray);
-    const updatedItem = { ...item, Likedby: JSON.stringify(updatedLikedByArray), Likes: updatedLikes };
+    const userHasLiked = updatedLikedByArray.indexOf(currentUserId) >= 0;
+    const updatedItem = { ...item, Likedby: JSON.stringify(updatedLikedByArray), Likes: updatedLikes, likedByUser: userHasLiked };
     handleItemUpdate(updatedItem);
-  };
-
-  const extractMentions = (text: string) => {
-    const mentionRegex = /@(\w+)/g;
-    const matches = text.match(mentionRegex);
-    return matches || [];
   };
 
   const filterItemsByUser = (items: any[]) => {
@@ -70,10 +76,11 @@ const KwitterPost: React.FC<IKwitterPostProps> = ({ showAll, items, handleItemUp
   const filterItemsByMention = (items: any[]) => {
     if (!currentMention) return items;
     return items.filter(item => {
-      const mentions = extractMentions(item.Text);
-      return mentions.some(mention => mention === currentMention); // Using .some() here
+        // Extract username from the currentMention (i.e., remove the '@' symbol)
+        const mentionedUser = currentMention.replace('@', '');
+        return item.Title === mentionedUser;
     });
-  };
+};
 
   const renderHashtags = (hashtagString: string) => {
     const hashtags = hashtagString ? JSON.parse(hashtagString) : [];
@@ -113,9 +120,9 @@ const KwitterPost: React.FC<IKwitterPostProps> = ({ showAll, items, handleItemUp
   };
 
   const { popularPosts, regularPosts } = getSeparatedPosts(items, popularThreshold);
-
+  const sortedRegularPosts = sortRegularPosts(regularPosts);
   return (
-    <div>
+    <div style={{'height': '700px', 'overflow': 'scroll'}}>
       {currentFilter && (
         <div>
           Filtering by: #{currentFilter}
@@ -129,12 +136,17 @@ const KwitterPost: React.FC<IKwitterPostProps> = ({ showAll, items, handleItemUp
         </div>
       )}
       <div style={{'backgroundColor': '#00453C'}}>
-        <img src={'blob:https://ovning.sharepoint.com/af87cb8f-9d2c-4885-81ef-bb034966de9d'}/>
+        <img src={'https://ovning.sharepoint.com/sites/FSPOS/Delade%20dokument/kwitter.png'}/>
       </div>
       <section>
+        <div>
+          <button onClick={() => setSortType('default')}>Default</button>
+          <button onClick={() => setSortType('latest')}>Latest</button>
+          <button onClick={() => setSortType('mostLikes')}>Most Likes</button>
+        </div>
         {/* Render popular posts */}
         {popularPosts.map((item: any) => (
-          <div className={styles["tweet-wrap"]} key={item.Id}>
+          <div style={{'border': '1px solid gray'}} className={styles["tweet-wrap"]} key={item.Id}>
             <img src={'blob:https://ovning.sharepoint.com/782450bc-d0f6-4ff8-a73c-268c38f16838'} className={styles.profileImage} alt="Profile" />
             <div className={styles["tweet-header"]}>
               <div className="tweet-header-info">
@@ -142,7 +154,7 @@ const KwitterPost: React.FC<IKwitterPostProps> = ({ showAll, items, handleItemUp
                 <p>{renderMentions(item.Text)}</p>
                 <div>{renderHashtags(item.hashtag)}</div>
                 <div className={styles["tweet-info-counts"]}>
-                  <Icon iconName="Like" onClick={() => onLike(item)} />
+                <Icon iconName={JSON.parse(item.Likedby || "[]").indexOf(currentUserId) >= 0 ? "LikeSolid" : "Like" } onClick={() => onLike(item)} />
                   <div className={styles.likes}>{item.Likes}</div>
                   <Icon iconName="hashtag" />
                 </div>
@@ -151,16 +163,16 @@ const KwitterPost: React.FC<IKwitterPostProps> = ({ showAll, items, handleItemUp
           </div>
         ))}
         {/* Render regular posts */}
-        {regularPosts.map((item: any) => (
+        {sortedRegularPosts.map((item: any) => (
           <div className={styles["tweet-wrap"]} key={item.Id}>
-            <img src={'blob:https://ovning.sharepoint.com/782450bc-d0f6-4ff8-a73c-268c38f16838'} className={styles.profileImage} alt="Profile" />
+            <img src={item.fulllogourl} className={styles.profileImage} alt="Profile" />
             <div className={styles["tweet-header"]}>
               <div className="tweet-header-info">
                 <span>@{item.Title}</span> <span> {dayjs(item.Created).fromNow()} </span>
                 <p>{renderMentions(item.Text)}</p>
                 <div>{renderHashtags(item.hashtag)}</div>
                 <div className={styles["tweet-info-counts"]}>
-                  <Icon iconName="Like" onClick={() => onLike(item)} />
+                <Icon iconName={JSON.parse(item.Likedby || "[]").indexOf(currentUserId) >= 0 ? "LikeSolid" : "Like" } onClick={() => onLike(item)} />
                   <div className={styles.likes}>{item.Likes}</div>
                   <Icon iconName="hashtag" />
                 </div>
