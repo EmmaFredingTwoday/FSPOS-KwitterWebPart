@@ -75,13 +75,14 @@ const KwitterPost: React.FC<IKwitterPostProps> = ({ showAll, items, handleItemUp
 
   const filterItemsByMention = (items: any[]) => {
     if (!currentMention) return items;
+    // Extract username from the currentMention (i.e., remove the '@' symbol)
+    const mentionedUser = currentMention.replace('@', '').replace(/_/g, ' ').toLowerCase();
     return items.filter(item => {
-        // Extract username from the currentMention (i.e., remove the '@' symbol)
-        const mentionedUser = currentMention.replace('@', '');
-        return item.Title === mentionedUser;
+      return item.Title.toLowerCase() === mentionedUser || 
+             (item.Text && item.Text.toLowerCase().includes(`@${mentionedUser}`));
     });
-};
-
+  };
+  
   const renderHashtags = (hashtagString: string) => {
     const hashtags = hashtagString ? JSON.parse(hashtagString) : [];
     if (hashtags.length === 0 || hashtags[0] === '') return null;
@@ -94,18 +95,20 @@ const KwitterPost: React.FC<IKwitterPostProps> = ({ showAll, items, handleItemUp
     const mentionRegex = /(@\w+)/g;
     const parts = text.split(mentionRegex);
     return parts.map((part, index) => {
-        if (part.indexOf('@') === 0) {
-            return (
-                <span 
-                    key={index} 
-                    onClick={() => setCurrentMention(part)} 
-                    className={styles.mention ? styles.mention : ''}
-                >
-                    {part}  
-                </span>
-            );
-        }
-        return part;
+      if (part.indexOf('@') === 0) {
+        // Replacing underscores with spaces
+        const cleanMention = part.replace(/_/g, ' ');
+        return (
+          <span 
+              key={index} 
+              onClick={() => setCurrentMention(cleanMention)} 
+              className={styles.mention ? styles.mention : ''}
+          >
+              {cleanMention}
+          </span>
+        );
+      }
+      return part;
     });
   };
 
