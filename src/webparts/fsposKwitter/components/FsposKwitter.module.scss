@@ -82,6 +82,11 @@ img {
     margin: 16px;
 }
 
+.overflowWrap {
+  overflow-wrap: break-word;
+  width: 350px;
+}
+
 .tweet-header {
   display: flex;
   align-items:flex-start;

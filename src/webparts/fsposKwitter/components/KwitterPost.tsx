@@ -16,7 +16,7 @@ interface IKwitterPostProps {
   list: string;
 }
 
-const KwitterPost: React.FC<IKwitterPostProps> = ({ showAll, items, handleItemUpdate, currentUser, popularThreshold = 30, ...props }) => {
+const KwitterPost: React.FC<IKwitterPostProps> = ({ showAll, items, handleItemUpdate, currentUser, popularThreshold = 300000000, ...props }) => {
   const currentUserId = currentUser.loginName;
   const _sp = React.useRef(getSP());
 
@@ -92,7 +92,7 @@ const KwitterPost: React.FC<IKwitterPostProps> = ({ showAll, items, handleItemUp
   };
 
   const renderMentions = (text: string) => {
-    const mentionRegex = /(@\w+)/g;
+    const mentionRegex = /(@[\p{L}\d_]+)/gu;
     const parts = text.split(mentionRegex);
     return parts.map((part, index) => {
       if (part.indexOf('@') === 0) {
@@ -155,7 +155,7 @@ const KwitterPost: React.FC<IKwitterPostProps> = ({ showAll, items, handleItemUp
               <div className="tweet-header-info">
                 <span>@{item.Title}</span> <span> {dayjs(item.Created).fromNow()} </span>
                 <p>{renderMentions(item.Text)}</p>
-                <div>{renderHashtags(item.hashtag)}</div>
+                <div className={styles["overflowWrap"]}>{renderHashtags(item.hashtag)}</div>
                 <div className={styles["tweet-info-counts"]}>
                 <Icon iconName={JSON.parse(item.Likedby || "[]").indexOf(currentUserId) >= 0 ? "LikeSolid" : "Like" } onClick={() => onLike(item)} />
                   <div className={styles.likes}>{item.Likes}</div>
@@ -173,7 +173,7 @@ const KwitterPost: React.FC<IKwitterPostProps> = ({ showAll, items, handleItemUp
               <div className="tweet-header-info">
                 <span>@{item.Title}</span> <span> {dayjs(item.Created).fromNow()} </span>
                 <p>{renderMentions(item.Text)}</p>
-                <div>{renderHashtags(item.hashtag)}</div>
+                <div className={styles["overflowWrap"]}>{renderHashtags(item.hashtag)}</div>
                 <div className={styles["tweet-info-counts"]}>
                 <Icon iconName={JSON.parse(item.Likedby || "[]").indexOf(currentUserId) >= 0 ? "LikeSolid" : "Like" } onClick={() => onLike(item)} />
                   <div className={styles.likes}>{item.Likes}</div>
