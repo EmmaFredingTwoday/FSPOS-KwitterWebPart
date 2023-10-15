@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { IKwitterDialogProps } from './IDialogProps';
 import {
-    TextField, 
+    TextField, Dropdown,
     DefaultButton, PrimaryButton,
     DialogFooter, DialogContent
 } from '@fluentui/react/lib';
@@ -45,11 +45,12 @@ const KwitterDialogContent: React.FC<IKwitterDialogProps> = (props) => {
                         onBlur={(e) => validateHashtags((e.target as HTMLInputElement).value)}
                         value={hashtagString}
                         errorMessage={hashtagError}
-                        placeholder="e.g. #fun, #sunnyday"
+                        placeholder="e.g. #kul,#soligdag"
                     />
+                    <Dropdown options={[{key: 'Afa Försäkring', text: 'Afa Försäkring'}, {key: 'AMF', text: 'AMF'}]} />
                 </div>
                 <DialogFooter>
-                    <DefaultButton text="Cancel" title="Cancel" onClick={props.onClose} />
+                    <DefaultButton text="Avbryt" title="Avbryt" onClick={props.onClose} />
                     <PrimaryButton
                         text="Skapa inlägg"
                         title="Skapa inlägg"

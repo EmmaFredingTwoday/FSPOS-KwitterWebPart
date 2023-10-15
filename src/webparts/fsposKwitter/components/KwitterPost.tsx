@@ -65,6 +65,16 @@ const KwitterPost: React.FC<IKwitterPostProps> = ({ showAll, items, handleItemUp
     return items.filter(item => item.Title === currentUser.displayName);
   };
 
+  const alreadyLiked = (item:any) => {
+    const likedByArray = item.Likedby ? JSON.parse(item.Likedby) : [];
+
+    if (likedByArray.includes(currentUserId)) {       
+      return false;
+    } else {     
+      return true;
+    }
+}
+
   const filterItemsByHashtag = (items: any[]) => {
     if (!currentFilter) return items;
     return items.filter(item => {
@@ -72,6 +82,11 @@ const KwitterPost: React.FC<IKwitterPostProps> = ({ showAll, items, handleItemUp
       return hashtags.includes(currentFilter);
     });
   };
+
+  const itemsLiked = (items: any[]) => {    
+    items.forEach(item => item.likedByUser = alreadyLiked(item));
+    return items;
+  }
 
   const filterItemsByMention = (items: any[]) => {
     if (!currentMention) return items;
@@ -113,7 +128,8 @@ const KwitterPost: React.FC<IKwitterPostProps> = ({ showAll, items, handleItemUp
   };
 
   const getSeparatedPosts = (items: any[], threshold: number) => {
-    const filteredItems = filterItemsByMention(filterItemsByHashtag(filterItemsByUser(items)));
+    let itemsLikedByUser = itemsLiked(items);
+    const filteredItems = filterItemsByMention(filterItemsByHashtag(filterItemsByUser(itemsLikedByUser)));
     const popularPosts = filteredItems.filter(item => item.Likes > threshold).slice(0, 3);
     const regularPosts = filteredItems.filter(item => popularPosts.indexOf(item) === -1);
     return {
@@ -151,6 +167,8 @@ const KwitterPost: React.FC<IKwitterPostProps> = ({ showAll, items, handleItemUp
         {popularPosts.map((item: any) => (
           <div style={{'border': '1px solid gray'}} className={styles["tweet-wrap"]} key={item.Id}>
             <img src={'blob:https://ovning.sharepoint.com/782450bc-d0f6-4ff8-a73c-268c38f16838'} className={styles.profileImage} alt="Profile" />
+          <div className={styles["tweet-wrap"]} key={item.Id}>
+            <img src={item.fulllogourl} className={styles.profileImage} alt="Profile" />
             <div className={styles["tweet-header"]}>
               <div className="tweet-header-info">
                 <span>@{item.Title}</span> <span> {dayjs(item.Created).fromNow()} </span>
@@ -158,6 +176,7 @@ const KwitterPost: React.FC<IKwitterPostProps> = ({ showAll, items, handleItemUp
                 <div className={styles["overflowWrap"]}>{renderHashtags(item.hashtag)}</div>
                 <div className={styles["tweet-info-counts"]}>
                 <Icon iconName={JSON.parse(item.Likedby || "[]").indexOf(currentUserId) >= 0 ? "LikeSolid" : "Like" } onClick={() => onLike(item)} />
+                  <Icon iconName={item.likedByUser == true ? "Like" : "LikeSolid" } onClick={() => onLike(item)} />
                   <div className={styles.likes}>{item.Likes}</div>
                   <Icon iconName="hashtag" />
                 </div>
@@ -176,6 +195,7 @@ const KwitterPost: React.FC<IKwitterPostProps> = ({ showAll, items, handleItemUp
                 <div className={styles["overflowWrap"]}>{renderHashtags(item.hashtag)}</div>
                 <div className={styles["tweet-info-counts"]}>
                 <Icon iconName={JSON.parse(item.Likedby || "[]").indexOf(currentUserId) >= 0 ? "LikeSolid" : "Like" } onClick={() => onLike(item)} />
+                  <Icon iconName={item.likedByUser == true ? "Like" : "LikeSolid" } onClick={() => onLike(item)} />
                   <div className={styles.likes}>{item.Likes}</div>
                   <Icon iconName="hashtag" />
                 </div>

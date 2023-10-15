@@ -26,6 +26,9 @@ const ShowDialog: React.FC<IKwitterDialogProps> = ({ updatePosts, onClose, onSav
   };
   return (
     <section>
+      <div style={{ backgroundColor: '#00453C'}}>
+        <img src='https://ovning.sharepoint.com/sites/FSPOS/Delade%20dokument/kwitter.png' />
+      </div>
       <div style={{ textAlign: 'center', marginBottom: '8px', marginTop:'8px' }}>
         <PrimaryButton text='Skriv inlägg' style={{ backgroundColor: '#00453C' }} onClick={() => setShowDialog(true)} />
       </div>
