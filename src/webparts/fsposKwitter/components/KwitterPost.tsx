@@ -48,11 +48,11 @@ const KwitterPost: React.FC<IKwitterPostProps> = ({ showAll, items, handleItemUp
     handleItemUpdate(updatedItem);
   };
 
-  const extractMentions = (text: string) => {
+  /*const extractMentions = (text: string) => {
     const mentionRegex = /@(\w+)/g;
     const matches = text.match(mentionRegex);
     return matches || [];
-  };
+  };*/
 
   const filterItemsByUser = (items: any[]) => {
     if (showAll) return items;
@@ -84,9 +84,14 @@ const KwitterPost: React.FC<IKwitterPostProps> = ({ showAll, items, handleItemUp
 
   const filterItemsByMention = (items: any[]) => {
     if (!currentMention) return items;
+    // Extract username from the currentMention (i.e., remove the '@' symbol)
+    const mentionedUser = currentMention.replace('@', '').replace(/_/g, ' ').toLowerCase();
+    const revertMentionTag = currentMention.replace(/ /g, '_').toLowerCase();
+   // console.log("Mentioned user: " + mentionedUser);
     return items.filter(item => {
-      const mentions = extractMentions(item.Text);
-      return mentions.some(mention => mention === currentMention); // Using .some() here
+      console.log("item.Text");
+      return item.Title.toLowerCase() === mentionedUser ||               
+             (item.Text && item.Text.toLowerCase().includes(revertMentionTag));
     });
   };
 
